@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ella's Comprehensive Canine Wellness Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F9F5F1; 
+            color: #4A4A4A;
+        }
+        .header-bg {
+            background-color: #3A664E; 
+        }
+        .text-primary { color: #3A664E; }
+        .bg-primary { background-color: #3A664E; }
+        
+        .filter-btn {
+            transition: all 0.2s ease;
+            border: 2px solid #D1D5DB;
+        }
+        .filter-btn.active {
+            background-color: #3A664E;
+            color: #FFFFFF;
+            border-color: #3A664E;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(58, 102, 78, 0.2);
+        }
+        .food-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            will-change: transform;
+            border: 1px solid #E5E7EB;
+        }
+        .food-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .tag {
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+        .tag-probiotic { background-color: #A3B18A; color: #3A664E; }
+        .tag-prebiotic { background-color: #D4A373; color: #7F5539; }
+        .tag-soothing { background-color: #8DB5C3; color: #1E4D60; }
+        .tag-immunity { background-color: #C27D65; color: #6D3D2C; }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .spinner {
+          border: 4px solid rgba(255, 255, 255, 0.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          width: 1.5rem;
+          height: 1.5rem;
+          animation: spin 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="app" class="container mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-12">
+        <header class="header-bg text-white rounded-b-2xl shadow-xl mb-12 py-8 px-6">
+            <div class="max-w-4xl mx-auto text-center">
+                <h1 class="text-3xl md:text-5xl font-extrabold mb-2">Ella's Canine Wellness Planner</h1>
+                <p class="text-xl font-light opacity-90">Gut Health & Immunity Guide (Chennai-Friendly)</p>
+            </div>
+        </header>
+
+        <section class="max-w-6xl mx-auto mb-10">
+            <h2 class="text-2xl font-bold text-primary mb-3">Your Personalized Diet Overview</h2>
+            <p class="text-gray-600 leading-relaxed mb-4">
+                This guide offers a comprehensive list of safe and beneficial additions to Ella's main diet of **Drools Chicken and Egg** kibble. These local ingredients from Chennai markets are categorized to help you boost her **gut health** (probiotics, prebiotics, soothing agents) and **immunity**. Click any card for detailed serving instructions and cautions.
+            </p>
+        </section>
+
+        <nav id="controls" class="flex flex-col md:flex-row justify-between items-center gap-4 max-w-6xl mx-auto mb-12">
+            <div id="filters" class="flex flex-wrap justify-center md:justify-start gap-3 md:gap-4 flex-grow">
+                <button data-filter="all" class="filter-btn active font-semibold text-sm sm:text-base py-2 px-6 rounded-full bg-white hover:bg-gray-50">Show All</button>
+                <button data-filter="probiotic" class="filter-btn font-semibold text-sm sm:text-base py-2 px-6 rounded-full bg-white hover:bg-gray-50">Probiotics</button>
+                <button data-filter="prebiotic" class="filter-btn font-semibold text-sm sm:text-base py-2 px-6 rounded-full bg-white hover:bg-gray-50">Prebiotics</button>
+                <button data-filter="soothing" class="filter-btn font-semibold text-sm sm:text-base py-2 px-6 rounded-full bg-white hover:bg-gray-50">Soothing</button>
+                <button data-filter="immunity" class="filter-btn font-semibold text-sm sm:text-base py-2 px-6 rounded-full bg-white hover:bg-gray-50">Immunity</button>
+            </div>
+        </nav>
+
+        <main id="food-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        </main>
+    </div>
+
+    <div id="modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none">
+        <div id="modal-content" class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 md:p-8 relative transform scale-95">
+            <button id="modal-close" class="absolute top-4 right-4 text-3xl font-light text-gray-400 hover:text-primary transition-colors">&times;</button>
+            <div id="modal-body" class="prose max-w-none text-gray-700">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const initialFoodData = [
+            {
+                name: "Homemade Dahi (Curd)",
+                icon: "🥛",
+                category: ["probiotic", "soothing"],
+                summary: "Rich in live cultures (probiotics) essential for a balanced gut. Excellent mixed into soft foods.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Homemade Dahi (Curd)</h2><p class="mb-4 text-lg">Curd is rich in **Lactobacillus**, a beneficial bacteria that aids in digestion and nutrient absorption. **This is ideal for mixing with soft rice to create the Curd Rice Ella already loves.**</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>**Crucial:** Use only **plain, homemade, or commercial unflavored curd**. Absolutely avoid sugar, salt, fruit, or added spices.</li><li>Mix 1-3 tablespoons (depending on size) directly into her meal or with plain cooked white rice.</li><li>Ensure the curd is fresh and cold to maintain the active cultures.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Monitor for signs of lactose intolerance (gas, loose stool). If observed, reduce the amount or discontinue use.</p>`
+            },
+            {
+                name: "Kaddu (Pumpkin) Purée",
+                icon: "🎃",
+                category: ["prebiotic", "soothing"],
+                summary: "High in soluble fiber, acting as a prebiotic and effective natural remedy for both constipation and diarrhea.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Kaddu (Pumpkin) Purée</h2><p class="mb-4 text-lg">Kaddu (or pumpkin) is a fiber powerhouse that feeds the good bacteria in Ella's gut. The high water and fiber content help solidify loose stools or ease constipation.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>**Use fresh, locally sourced Kaddu.** Steam or boil chunks until soft and mash into a purée.</li><li>**Do not use canned pumpkin pie filling** (it contains sugar and spices).</li><li>Add 1-2 teaspoons per meal. It’s an essential item for digestive first aid.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Never serve raw pumpkin, as it can be tough to digest. Always serve in moderation.</p>`
+            },
+            {
+                name: "Cooked White Rice (Choru)",
+                icon: "🍚",
+                category: ["soothing"],
+                summary: "Plain, easily digestible carbohydrate base, excellent for mixing with curd or during digestive upset.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Cooked White Rice (Choru)</h2><p class="mb-4 text-lg">Plain boiled white rice is a bland, gentle carbohydrate that is easy on the stomach lining, making it ideal for mixing with dahi (curd) or boiled chicken to soothe a sensitive gut.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Boil until very soft and slightly sticky. **Do not add oil, salt, or spices.**</li><li>Serve lukewarm. It should constitute about 70-80% of a temporary bland diet mixture.</li><li>For daily use, mix a small scoop into her kibble for bulk and energy.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Use in moderation if Ella needs weight management, as rice is calorie-dense.</p>`
+            },
+            {
+                name: "Moong Dal (Yellow Lentil)",
+                icon: "🟡",
+                category: ["soothing", "immunity"],
+                summary: "Highly digestible protein and gentle fiber source, perfect for sensitive stomachs.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Moong Dal (Yellow Lentil)</h2><p class="mb-4 text-lg">Moong Dal is one of the easiest pulses for dogs to digest, making it excellent for sensitive guts. It provides essential protein and fiber without causing gas or irritation.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Thoroughly wash and boil the dal until completely soft/mushy.</li><li>**Crucial:** Serve it completely plain—no salt, turmeric, ghee, or *tadka*.</li><li>Mix a spoonful of cooked, mashed dal into Ella's food for a nutritional boost.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Ensure it is cooked to an almost mushy consistency for optimal digestion.</p>`
+            },
+            {
+                name: "Mashed Banana (Pazham)",
+                icon: "🍌",
+                category: ["prebiotic", "soothing"],
+                summary: "Source of potassium and gentle prebiotic fiber (FOS), aiding bowel regularity.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Mashed Banana (Pazham)</h2><p class="mb-4 text-lg">Bananas contain fructooligosaccharides (FOS), a prebiotic fiber that supports the growth of healthy bacteria. They are also rich in potassium, vital for muscle and nerve function.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Use ripe bananas, peeled and mashed into a paste.</li><li>Offer very small quantities—a coin-sized slice or a half-teaspoon mashed—as a rare treat or mixed with curd.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Due to high natural sugar content, bananas should be a rare treat, especially for dogs needing weight management.</p>`
+            },
+            {
+                name: "Cooked Chicken Breast",
+                icon: "🍗",
+                category: ["immunity", "soothing"],
+                summary: "Lean, easily digestible protein source, vital for tissue repair and immune function.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Cooked Chicken Breast</h2><p class="mb-4 text-lg">Boiled or steamed chicken breast provides necessary amino acids and is highly recommended during recovery from digestive issues.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Boil or steam boneless, skinless chicken breast until fully cooked.</li><li>**Shred or finely mince the chicken.** Absolutely **NO** bones, fat, oil, or spices.</li><li>Mix small, controlled portions (1-2 tbsp) with white rice as a bland meal.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Always ensure it is cooked through. Never feed cooked bones as they splinter.</p>`
+            },
+            {
+                name: "Boiled Carrot (Gajar)",
+                icon: "🥕",
+                category: ["prebiotic", "immunity"],
+                summary: "Contains gentle fiber and beta-carotene (Vitamin A) for vision and immune health.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Boiled Carrot (Gajar)</h2><p class="mb-4 text-lg">Cooking carrots breaks down the cell walls, making the nutrients and fiber more bioavailable for Ella's digestion. The fiber acts as a prebiotic.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Peel and boil or steam until soft. **Mash or finely chop** before serving.</li><li>Serve 1-2 teaspoons mixed into her regular meal.</li><li>Can also be given cold as a crunchy treat (raw), but the nutritional value is better when cooked.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>The high sugar content means moderation is key, especially for diabetic or overweight dogs.</p>`
+            },
+            {
+                name: "Cooked Sweet Potato",
+                icon: "🍠",
+                category: ["prebiotic", "immunity"],
+                summary: "Excellent source of complex carbs and prebiotic fiber, supporting colon health.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Cooked Sweet Potato</h2><p class="mb-4 text-lg">Sweet potatoes are packed with dietary fiber that supports beneficial gut flora and helps regulate bowel movements. They are also rich in vitamins B6 and C.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Peel and boil/steam until very soft. **Mash completely.**</li><li>Never serve raw. **NO** skin, spices, or butter.</li><li>Mix 1-2 teaspoons into her kibble or a bland diet mix.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Must be served in small, controlled portions due to its high carbohydrate load.</p>`
+            },
+            {
+                name: "Plain Cooked Egg",
+                icon: "🥚",
+                category: ["immunity"],
+                summary: "Nearly perfect protein, providing essential amino acids and immune-boosting nutrients.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Plain Cooked Egg</h2><p class="mb-4 text-lg">Eggs are highly nutritious and complement the protein in Ella's kibble. They are gentle on the digestive system and great for boosting overall health.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Scramble or hard-boil the egg. **NO** oil, salt, butter, or spices.</li><li>Chop finely and mix a small amount (half a yolk or a quarter of an egg) into her meal a few times a week.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Avoid feeding raw egg whites regularly as they can interfere with biotin absorption. Always cook thoroughly.</p>`
+            },
+            {
+                name: "Fish Oil (Omega-3s)",
+                icon: "🐟",
+                category: ["immunity"],
+                summary: "Anti-inflammatory Omega-3 fatty acids essential for cell health and a strong immune response.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Fish Oil (Omega-3s)</h2><p class="mb-4 text-lg">Sourced from fatty fish (like local sardines or mackerel), Omega-3s reduce inflammation throughout the body, including the gut lining, significantly boosting immunity.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Use a high-quality, reputable fish oil supplement or boil/steam a small piece of local, bony fish (like small sardines, removing all bones).</li><li>If using oil, follow the veterinarian's recommended dosage (usually a few drops per day).</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Avoid liver oil (like cod liver oil) in high doses due to Vitamin A/D toxicity risk. Consult your vet for the exact dosage.</p>`
+            },
+            {
+                name: "Unsweetened Coconut Milk",
+                icon: "🥥",
+                category: ["soothing", "immunity"],
+                summary: "Rich in lauric acid, which has antimicrobial properties, and is soothing to the stomach.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Unsweetened Coconut Milk (Thega Paal)</h2><p class="mb-4 text-lg">Coconut milk contains medium-chain triglycerides (MCTs), which are easily digested and possess mild antibacterial properties that can help balance the gut.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Use freshly extracted or unsweetened commercial coconut milk. **Do not use sweetened versions.**</li><li>Add a teaspoon or two to her water bowl or mix into her kibble a few times a week.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Coconut milk is high in fat; limit portions to avoid loose stools or weight gain.</p>`
+            },
+            {
+                name: "Cooked Oats (Minimal)",
+                icon: "🥣",
+                category: ["prebiotic", "soothing"],
+                summary: "Source of beta-glucans, a soluble fiber that is excellent for regulating bowel movements.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Cooked Oats</h2><p class="mb-4 text-lg">Plain oats, common in Indian households, provide gentle fiber that can help firm stools and is highly soothing to an irritated gut.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Cook plain rolled oats (like Quaker) with water until soft.</li><li>**NO** milk, sugar, salt, or flavorings.</li><li>Serve a small spoonful (1-2 tsp) mixed into her regular meal.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Oats are a carb source; feed sparingly to maintain ideal weight.</p>`
+            },
+            {
+                name: "Steamed Green Beans",
+                icon: "🫛",
+                category: ["prebiotic", "soothing"],
+                summary: "Low-calorie, low-fat source of fiber that promotes satiety and gut movement.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Steamed Green Beans</h2><p class="mb-4 text-lg">Green beans are a safe and healthy filler that adds bulk and fiber to Ella's diet without adding many calories. Great for keeping her feeling full and regular.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Wash and trim fresh local beans. Steam or boil until tender.</li><li>**NO** salt, oil, or spices.</li><li>Chop them finely or mash them if Ella tends to gulp her food.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Excessive consumption of raw beans can be hard to digest. Always cook them.</p>`
+            },
+            {
+                name: "Turmeric Powder (Manjal)",
+                icon: "🟠",
+                category: ["immunity"],
+                summary: "Contains curcumin, a powerful natural anti-inflammatory compound that supports the immune system.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Turmeric Powder (Manjal)</h2><p class="mb-4 text-lg">Turmeric's anti-inflammatory effects can benefit the gut lining and ease general body inflammation, providing a systemic immune boost.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Mix a tiny pinch (1/8 tsp) with a small amount of coconut oil or ghee and a dash of black pepper (to aid absorption).</li><li>Stir the paste into her food. Start with very small amounts.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Turmeric is potent. Always use high-quality powder and only in small, controlled amounts. Avoid excessive use.</p>`
+            },
+            {
+                name: "Ghee (Clarified Butter)",
+                icon: "🧈",
+                category: ["soothing"],
+                summary: "High in butyric acid, which provides energy to colon cells, promoting gut integrity and healing.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Ghee (Clarified Butter)</h2><p class="mb-4 text-lg">Ghee is high in easily digestible fats and has been shown to support colon health by feeding the cells lining the large intestine.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Use only **pure, unsalted ghee**.</li><li>Add a tiny amount (1/4 teaspoon for a medium dog) melted over her kibble to enhance palatability and aid digestion.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Ghee is nearly 100% fat. **Use sparingly** as excessive amounts can lead to weight gain or pancreatitis in sensitive dogs.</p>`
+            },
+            {
+                name: "Cooked Spinach (Palak)",
+                icon: "🍃",
+                category: ["immunity"],
+                summary: "Excellent source of antioxidants, vitamins, and iron for blood health and immune function.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Cooked Spinach (Palak)</h2><p class="mb-4 text-lg">Spinach is a nutrient-dense green that provides powerful antioxidants to help combat cell damage and support a robust immune system.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Wash thoroughly and steam or boil until wilted. **Chop or purée it finely.**</li><li>Serve 1 teaspoon mixed into her regular meal 2-3 times a week.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Limit frequency for dogs prone to kidney stones due to oxalate content. Cooking reduces this risk.</p>`
+            },
+            {
+                name: "Watermelon",
+                icon: "🍉",
+                category: ["soothing"],
+                summary: "Hydrating, low-calorie fruit, a soothing way to provide fluid and antioxidants.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Watermelon</h2><p class="mb-4 text-lg">Commonly available in Chennai, watermelon is mostly water and is excellent for hydration, especially during hot weather. It provides a gentle digestive aid.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Remove all seeds and the hard green rind.</li><li>Cut into small, manageable cubes.</li><li>Serve a few cubes as a cold, refreshing treat.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>The rinds and seeds can cause digestive blockages or upset. Only feed the pink/red flesh.</p>`
+            },
+            {
+                name: "Papaya (Pappali)",
+                icon: "🥭",
+                category: ["soothing", "immunity"],
+                summary: "Contains the enzyme papain, which helps break down proteins and aids overall digestion.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Papaya (Pappali)</h2><p class="mb-4 text-lg">Papaya is a tropical fruit containing natural digestive enzymes that can help break down complex foods, making it easier for Ella's gut to process her meals.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Use ripe, peeled flesh. **Remove all seeds** (they contain trace amounts of cyanide and can be harmful).</li><li>Mince or mash and give a very small amount (1/2 tsp) with meals.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Like all fruits, use in strict moderation due to natural sugar content.</p>`
+            },
+            {
+                name: "Cooked Beetroot",
+                icon: "🔴",
+                category: ["immunity"],
+                summary: "Rich in antioxidants and fiber, supporting detox pathways and immune function.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Cooked Beetroot</h2><p class="mb-4 text-lg">Beetroot is a powerhouse of micronutrients that supports liver function, which is critical for a strong immune system.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Peel and boil/steam until very soft. **Grate or purée completely.**</li><li>Serve 1/2 teaspoon mixed into her food occasionally.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Beetroot can turn stool and urine pink/red, which is normal but may be mistaken for blood. Use small portions.</p>`
+            },
+            {
+                name: "Ginger (Inji)",
+                icon: "🫚",
+                category: ["soothing"],
+                summary: "Natural anti-nausea and anti-inflammatory agent, excellent for settling an upset stomach.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Ginger (Inji)</h2><p class="mb-4 text-lg">Ginger is effective at reducing stomach discomfort and soothing the gut lining due to its potent anti-inflammatory properties.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Use fresh ginger root. Peel it.</li><li>**Mince a piece the size of a grain of rice** (it's very strong).</li><li>Mix this tiny amount into her bland meal when she has an upset stomach.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Only use minuscule amounts. Too much can cause burning or irritation.</p>`
+            },
+            {
+                name: "Idli/Dosa Batter",
+                icon: "🫓",
+                category: ["probiotic", "prebiotic"],
+                summary: "The fermentation process creates beneficial bacteria and makes the rice/dal easier to digest.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Idli/Dosa Batter</h2><p class="mb-4 text-lg">The traditional fermentation process of this staple batter creates natural probiotics, and the steamed preparation (Idli) is incredibly gentle on the digestive system.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>**Crucial:** Use plain, freshly fermented batter or freshly steamed, unseasoned Idli. **NO** oil, salt, sambar, chutney, or spices.</li><li>Mix a teaspoon of the batter into her food or crumble a small piece of plain Idli into her meal.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Ensure it is served plain and that the fermentation hasn't gone excessively sour.</p>`
+            },
+            {
+                name: "Tender Coconut Water",
+                icon: "💧",
+                category: ["soothing"],
+                summary: "Natural source of electrolytes, vital for hydration and balancing the gut during diarrhea or vomiting.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Tender Coconut Water</h2><p class="mb-4 text-lg">Easily available fresh in Chennai, coconut water replenishes essential electrolytes (like potassium) lost during digestive upset, aiding recovery and hydration.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Offer a few spoonfuls mixed into her regular drinking water, or directly if she likes it.</li><li>Ensure it's fresh from the tender coconut. **Do not use packaged, sweetened varieties.**</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Limit consumption to avoid excessive potassium intake, especially if Ella has existing kidney issues (consult your vet).</p>`
+            },
+            {
+                name: "Apple (Small Amounts)",
+                icon: "🍎",
+                category: ["prebiotic"],
+                summary: "Source of pectin, a powerful prebiotic fiber that supports colon health and firms stools.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Apple (Small Amounts)</h2><p class="mb-4 text-lg">Apples contain pectin, a fermentable fiber that acts as a prebiotic, feeding the good bacteria in Ella's gut and aiding in the solidification of stool.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Wash and peel the apple. **Crucially, remove all seeds and the core,** as apple seeds contain trace amounts of cyanide.</li><li>Cut into small, chewable cubes. Serve 2-3 cubes as a treat.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Always remove seeds and core. High in natural sugar, so use as a rare treat.</p>`
+            },
+            {
+                name: "Ground Chia Seeds",
+                icon: "⚫",
+                category: ["prebiotic", "soothing"],
+                summary: "When hydrated, they create mucilage, a gel-like substance that soothes the gut lining.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Ground Chia Seeds</h2><p class="mb-4 text-lg">Chia seeds absorb water to form a soothing gel (mucilage) which can help carry waste smoothly through the digestive tract and regulate stool consistency.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>**Must be ground or soaked.** Mix 1/4 teaspoon with 2 tablespoons of water and let it sit for 10-15 minutes until it forms a gel.</li><li>Mix the gel into Ella's food.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Always hydrate them before feeding; dry seeds can absorb fluid in the gut, leading to dehydration or blockage.</p>`
+            },
+            {
+                name: "Broccoli (Cooked)",
+                icon: "🥦",
+                category: ["immunity"],
+                summary: "A cruciferous vegetable high in vitamins C and K, boosting the immune system.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Broccoli (Cooked)</h2><p class="mb-4 text-lg">Broccoli is packed with essential nutrients that support Ella's cellular health and immune defenses.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Steam or boil the florets until soft. **Chop finely.**</li><li>Serve a small piece (the size of your thumbnail) mixed with her meal.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Broccoli can cause gas or bloat if given in large quantities. Use sparingly.</p>`
+            },
+            {
+                name: "Grated Cucumber",
+                icon: "🟢",
+                category: ["soothing"],
+                summary: "Extremely low-calorie and high in water, providing gentle hydration and fiber.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Grated Cucumber</h2><p class="mb-4 text-lg">Cucumbers are a refreshing, low-impact food that's safe for dogs and provides hydration, which is vital for digestive health.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>Wash and peel the cucumber.</li><li>Grate it finely or cut it into tiny, chewable pieces.</li><li>Offer 2-3 pieces as a low-calorie treat.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Avoid any part of the vine or leaves. Only feed the flesh.</p>`
+            },
+            {
+                name: "Fermented Pickle Juice",
+                icon: "🧪",
+                category: ["probiotic"],
+                summary: "Small amounts of brine from naturally fermented vegetables (like carrots) can contain probiotics.",
+                details: `<h2 class="text-3xl font-extrabold text-primary mb-3">Fermented Pickle Juice (Small Amounts)</h2><p class="mb-4 text-lg">If you make homemade, naturally fermented vegetables (like carrots or beetroot) using salt and water (no vinegar), the brine contains beneficial bacteria.</p><h3 class="font-bold text-xl text-primary mt-6 mb-2">How to Serve:</h3><ul class="list-disc pl-5 mb-4"><li>**Crucial:** MUST be naturally fermented with salt/water only. **AVOID** store-bought pickles made with vinegar, sugar, and spices.</li><li>Offer a single drop mixed into her water bowl or a tiny dab mixed into her curd rice once a week.</li></ul><h3 class="font-bold text-xl text-primary mb-2">Caution:</h3><p>Due to high salt content, this should only be given in minuscule amounts and only if the ferment is homemade and plain.</p>`
+            }
+        ];
+
+        let currentFoodData = [...initialFoodData]; 
+
+        const grid = document.getElementById('food-grid');
+        const filters = document.getElementById('filters');
+        const modal = document.getElementById('modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalBody = document.getElementById('modal-body');
+        const modalClose = document.getElementById('modal-close');
+
+
+        const categoryMap = {
+            probiotic: { label: 'Probiotic', class: 'tag-probiotic' },
+            prebiotic: { label: 'Prebiotic', class: 'tag-prebiotic' },
+            soothing: { label: 'Soothing', class: 'tag-soothing' },
+            immunity: { label: 'Immunity', class: 'tag-immunity' }
+        };
+
+        const createFoodCard = (food) => {
+            const card = document.createElement('div');
+            card.className = 'food-card bg-white rounded-xl p-6 shadow-md cursor-pointer flex flex-col items-center text-center';
+            card.dataset.categories = food.category.join(' ');
+            
+            const tagsHTML = food.category.map(cat => 
+                `<span class="tag ${categoryMap[cat]?.class || ''}">${categoryMap[cat]?.label || cat}</span>`
+            ).join(' ');
+
+            card.innerHTML = `
+                <div class="text-6xl mb-4">${food.icon}</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">${food.name}</h3>
+                <p class="text-gray-500 mb-4 h-16 flex-grow overflow-hidden">${food.summary}</p>
+                <div class="flex flex-wrap justify-center gap-2">${tagsHTML}</div>
+            `;
+            
+            card.addEventListener('click', () => openModal(food));
+            return card;
+        };
+
+        const populateGrid = (data = currentFoodData) => {
+            grid.innerHTML = '';
+            if (Array.isArray(data)) {
+                data.forEach(food => {
+                    grid.appendChild(createFoodCard(food));
+                });
+            } else {
+                currentFoodData.forEach(food => {
+                    grid.appendChild(createFoodCard(food));
+                });
+            }
+
+            const activeFilter = filters.querySelector('.active')?.dataset.filter || 'all';
+            filterGrid(activeFilter);
+        };
+
+        const filterGrid = (filter) => {
+            const cards = grid.querySelectorAll('.food-card');
+            cards.forEach(card => {
+                const categories = card.dataset.categories.split(' ');
+                if (filter === 'all' || categories.includes(filter)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        };
+
+        filters.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const filter = e.target.dataset.filter;
+                filters.querySelector('.active')?.classList.remove('active');
+                e.target.classList.add('active');
+                filterGrid(filter);
+            }
+        });
+
+        const openModal = (food) => {
+            modalBody.innerHTML = food.details;
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modalContent.classList.remove('scale-95');
+        };
+
+        const closeModal = () => {
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modalContent.classList.add('scale-95');
+        };
+
+        modalClose.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => populateGrid());
+    </script>
+</body>
+</html>
