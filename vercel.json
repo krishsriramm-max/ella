@@ -1,8 +1,8 @@
 {
-"rewrites": [
-{
-"source": "/",
-"destination": "/canine_health_planner.html"
-}
-]
+  "rewrites": [
+    { 
+      "source": "/", 
+      "destination": "/ella-food-planner.html" 
+    }
+  ]
 }
