@@ -1,0 +1,8 @@
+{
+"rewrites": [
+{
+"source": "/",
+"destination": "/canine_health_planner.html"
+}
+]
+}
